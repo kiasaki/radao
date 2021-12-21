@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+<head>
+  <title>RaDAO</title>
+  <style>
+    html, body {
+      font-size: 16px;
+      font-family: sans-serif;
+      margin: 0;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    .intro input[type='text'] {
+      width: 100%;
+      display: block;
+      border: none;
+      background: #efefef;
+      border-radius: 6px;
+      padding: 12px 18px;
+      margin-bottom: 18px;
+    }
+    .intro .button {
+      width: 100%;
+      color: #ffffff;
+      background: #54D1DB;
+      font-weight: bold;
+      border: none;
+      outline: none;
+      border-radius: 6px;
+      padding: 12px 18px;
+    }
+    .intro .button:hover {
+      opacity: 0.8;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="https://unpkg.com/mithril/mithril.js"></script>
+  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+  <script src="ra.js"></script>
+  <script>
+    const daoFactoryAddress = window?.ethereum?.chainId === '0x3' ? '0x8aae4e41389a5d4af10d14b6c8a50834fd949079' : '0xcED5Dd3312F415CA0b0457481F0C260db3BD89ad';
+    
+    const networkNames = {
+      '0x1': 'Mainnet',
+      '0x3': 'Ropsten',
+    };
+
+    function setupDao(address) {
+      setupRa(app, {
+        address: address,
+        tokens: [],
+        /*
+        color: '#111111',
+        primaryColor: '#6927e5',
+        backgroundColor: '#ffffff',
+        borderRadius: '6px',
+        */
+      });
+    }
+
+    function onVisitDao() {
+      setupDao(document.getElementById('daoAddress').value);
+    }
+
+    async function onCreateDao() {
+      if (!window.ethereum) return alert('No web3 wallet found!');
+      // console.log(await window.ethereum.request({method: 'eth_requestAccounts', params: []}));
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      const factory = new ethers.Contract(daoFactoryAddress, [
+        'function create(string,string,address,uint256,uint256,uint256,uint256) returns (uint256)'
+      ], provider).connect(signer);
+
+      const tokenName = prompt('Voting token name:');
+      if (!tokenName) return;
+      const tokenSymbol = prompt('Voting token symbol:');
+      if (!tokenSymbol) return;
+      let escrowToken = prompt('Escrow ERC20 token address:');
+      if (!escrowToken) {
+        escrowToken = '0x0000000000000000000000000000000000000000';
+      }
+      let minBalanceToPropose = prompt('Min balance to propose:', '100');
+      if (!minBalanceToPropose) return;
+      let minPercentQuorum = prompt('Min percent quorum:', '50');
+      if (!minPercentQuorum) return;
+      let minVotingTime = prompt('Min voting time (minutes):', '7200');
+      if (!minVotingTime) return;
+      let minExecutionDelay = prompt('Min execution delay (minutes):', '2880');
+      if (!minExecutionDelay) return;
+
+      try {
+        const tx = await (await factory.create(
+          tokenName, tokenSymbol, escrowToken,
+          ethers.utils.parseEther(minBalanceToPropose),
+          ethers.utils.parseUnits(minPercentQuorum, 10),
+          parseInt(minVotingTime)*60, parseInt(minExecutionDelay)*60
+        )).wait();
+        console.log(JSON.stringify(tx.logs, null, 2));
+        console.log(JSON.stringify(tx.events, null, 2));
+        const votingAddress = '0x'+tx.events[tx.events.length - 1].topics[1].slice(-40);
+        alert('DAO Created! Address: ' + votingAddress);
+        window.location.href = '/?address='+votingAddress;
+      } catch (err) {
+        console.error(err);
+        alert('Error: ' + err.message);
+      }
+    }
+
+    const IntroApp = {
+      view: function() {
+        return m('div.intro', {style: 'margin: 20vh auto 5vh;max-width: 380px;'}, [
+          m('h1', {}, 'Ra DAO'),
+          m('h3', {}, 'Visit existing DAO'),
+          m('input', {type: 'text', id: 'daoAddress', placeholder: '0xfea1...'}),
+          m('button.button', {onclick: onVisitDao}, 'Visit'),
+          m('h3', {style: 'margin-top: 32px;'}, 'Create new DAO'),
+          m('button.button', {onclick: onCreateDao}, 'Create'),
+          m('p', {}, 'Network: ' + (networkNames[window?.ethereum?.chainId] || 'Unknown')),
+          m('p', {}, 'Factory address: ' + daoFactoryAddress),
+        ]);
+      },
+    };
+
+    const queryParams = new URLSearchParams(window.location.search);
+    if (queryParams.get('address')) {
+      setupDao(queryParams.get('address'));
+    } else {
+      m.mount(app, IntroApp);
+    }
+  </script>
+</body>
+</html>

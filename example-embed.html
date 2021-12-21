@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+  <title>RaDAO</title>
+  <style>
+    html, body {
+      font-size: 16px;
+      font-family: monospace;
+      margin: 0;
+      color: #5C0B33;
+      background: #FAB8D9;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    button, input, textarea, select {
+      font-family: monospace;
+    }
+    .wrapper {
+      padding: 32px 16px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .wrapper a {
+      color: #5C0B33;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div style="display:flex;align-items:center;margin-bottom: 32px;">
+      <h1 style="margin:0;flex:1;">Magenta Finance</h1>
+      <div style="font-size:18px;">
+        <a href="#" style="margin-left: 12px;">Invest</a>
+        <a href="#" style="margin-left: 12px;">Farm</a>
+        <a href="#" style="margin-left: 12px;"><b>Governance</b></a>
+        <a href="#" style="margin-left: 12px;">Learn</a>
+      </div>
+    </div>
+    <div id="app"></div>
+  </div>
+  <script src="ra.js"></script>
+  <script type="text/javascript">
+    const queryParams = new URLSearchParams(window.location.search);
+    setupRa(app, {
+      address: queryParams.get('address') || '0xbf9fbff01664500a33080da5d437028b07dfcc55',
+      tokens: [],
+      color: '#5C0B33',
+      primaryColor: '#AD2167',
+      backgroundColor: '#FFE0F0',
+      borderRadius: '0px',
+    });
+  </script>
+</body>
+</html>
